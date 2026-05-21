@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-abyss text-text-primary font-sans antialiased;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1e3a5f #0a0e17;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #0a0e17;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #1e3a5f;
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #2563eb;
+  }
+
+  ::selection {
+    background: #06b6d440;
+    color: #22d3ee;
+  }
+}
+
+@layer components {
+  .grid-bg {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 49px,
+        #1e3a5f15 49px,
+        #1e3a5f15 50px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 49px,
+        #1e3a5f15 49px,
+        #1e3a5f15 50px
+      );
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d440, 0 0 40px #06b6d420;
+  }
+
+  .glow-green {
+    box-shadow: 0 0 10px #10b981, 0 0 20px #10b98140, 0 0 40px #10b98120;
+  }
+
+  .scan-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+    animation: scan-line 4s linear infinite;
+  }
+
+  .hud-border {
+    position: relative;
+    border: 1px solid #1e3a5f;
+  }
+
+  .hud-border::before,
+  .hud-border::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: #06b6d4;
+    border-style: solid;
+  }
+
+  .hud-border::before {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+
+  .hud-border::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+
+  .data-text {
+    @apply font-mono text-accent-cyan tracking-wider;
+  }
+
+  .threat-indicator {
+    @apply relative inline-block w-2 h-2 rounded-full;
+  }
+
+  .threat-indicator::after {
+    content: '';
+    @apply absolute inset-0 rounded-full;
+    animation: threat-pulse 1.5s ease-in-out infinite;
+    background: inherit;
+  }
+}
+
+@layer utilities {
+  .text-glow-cyan {
+    text-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d440;
+  }
+
+  .text-glow-green {
+    text-shadow: 0 0 10px #10b981, 0 0 20px #10b98140;
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 10px #ef4444, 0 0 20px #ef444440;
+  }
+}

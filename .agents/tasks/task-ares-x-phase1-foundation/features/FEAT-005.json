@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Next.js Frontend with military/tactical dark theme UI - authentication pages, dashboard layout, infrastructure graph visualization, asset inventory, attack path visualization, and real-time status indicators. Uses Next.js 14 App Router with TypeScript and Tailwind CSS.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create /frontend/package.json with Next.js 14, React 18, TypeScript, Tailwind CSS, and related dependencies",
     "Create /frontend/tsconfig.json with strict TypeScript configuration and path aliases",
