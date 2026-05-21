@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { login, verifyMfa } from '@/lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,22 +19,39 @@ export default function LoginPage() {
     setIsLoading(true);
 
     if (!showMfa) {
-      // Simulate initial credential validation
+      // Call the auth API for credential validation
       if (email && password) {
-        setTimeout(() => {
-          setShowMfa(true);
-          setIsLoading(false);
-        }, 800);
+        try {
+          const result = await login(email, password);
+          if (result.success) {
+            window.location.href = '/dashboard';
+          } else if (result.mfaRequired) {
+            setShowMfa(true);
+          } else {
+            setError('Invalid credentials. Access denied.');
+          }
+        } catch {
+          setError('Authentication service unavailable.');
+        }
       } else {
         setError('All fields are required');
-        setIsLoading(false);
       }
+      setIsLoading(false);
     } else {
-      // Simulate MFA verification
+      // MFA verification via API
       if (mfaCode.length === 6) {
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 600);
+        try {
+          const success = await verifyMfa(mfaCode);
+          if (success) {
+            window.location.href = '/dashboard';
+          } else {
+            setError('Invalid MFA code. Verification failed.');
+            setIsLoading(false);
+          }
+        } catch {
+          setError('MFA verification service unavailable.');
+          setIsLoading(false);
+        }
       } else {
         setError('Invalid MFA code. Enter 6 digits.');
         setIsLoading(false);

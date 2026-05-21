@@ -37,6 +37,7 @@ func New(cfg *config.Config) http.Handler {
 
 	// --- Public routes (no auth required) ---
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
+	mux.HandleFunc("POST /api/v1/auth/refresh", authHandler.RefreshToken)
 
 	// --- Health check ---
 	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +49,6 @@ func New(cfg *config.Config) http.Handler {
 	// --- Protected routes (require valid JWT) ---
 	// Auth routes
 	mux.Handle("POST /api/v1/auth/logout", authMiddleware(http.HandlerFunc(authHandler.Logout)))
-	mux.Handle("POST /api/v1/auth/refresh", authMiddleware(http.HandlerFunc(authHandler.RefreshToken)))
 	mux.Handle("POST /api/v1/auth/mfa/setup", authMiddleware(http.HandlerFunc(authHandler.InitMFA)))
 	mux.Handle("POST /api/v1/auth/mfa/verify", authMiddleware(http.HandlerFunc(authHandler.VerifyMFA)))
 

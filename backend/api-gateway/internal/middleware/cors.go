@@ -38,20 +38,23 @@ func CORS(cfg CORSConfig) func(http.Handler) http.Handler {
 	methods := strings.Join(cfg.AllowedMethods, ", ")
 	headers := strings.Join(cfg.AllowedHeaders, ", ")
 
+	isWildcard := len(cfg.AllowedOrigins) == 1 && cfg.AllowedOrigins[0] == "*"
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 
 			if allowedOrigins[origin] {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
-			} else if len(cfg.AllowedOrigins) == 1 && cfg.AllowedOrigins[0] == "*" {
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+			} else if isWildcard {
 				w.Header().Set("Access-Control-Allow-Origin", "*")
+				// Do not set Allow-Credentials with wildcard origin per CORS spec
 			}
 
 			w.Header().Set("Access-Control-Allow-Methods", methods)
 			w.Header().Set("Access-Control-Allow-Headers", headers)
 			w.Header().Set("Access-Control-Max-Age", cfg.MaxAge)
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 			// Handle preflight
 			if r.Method == http.MethodOptions {

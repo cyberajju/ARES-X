@@ -1,5 +1,6 @@
 """FastAPI routes for attack path operations."""
 
+import threading
 import time
 from typing import Optional
 
@@ -30,8 +31,10 @@ from app.services.vulnerability import VulnerabilityScorer
 
 router = APIRouter()
 
-# In-memory store for computed paths
+# In-memory store for computed paths (bounded to MAX_STORED_PATHS)
+MAX_STORED_PATHS = 1000
 _computed_paths: list[AttackPath] = []
+_paths_lock = threading.Lock()
 
 
 def _get_demo_graph() -> AttackGraph:
@@ -113,8 +116,12 @@ async def compute_attack_paths(
     scored_paths = [scorer.score_path(p, graph) for p in paths]
     scored_paths = scorer.prioritize_paths(scored_paths)
 
-    # Store for later retrieval
-    _computed_paths.extend(scored_paths)
+    # Store for later retrieval (bounded, thread-safe)
+    with _paths_lock:
+        _computed_paths.extend(scored_paths)
+        # Keep only the most recent paths if capacity is exceeded
+        if len(_computed_paths) > MAX_STORED_PATHS:
+            _computed_paths[:] = _computed_paths[-MAX_STORED_PATHS:]
 
     computation_time = (time.time() - start_time) * 1000
 
@@ -131,31 +138,33 @@ async def list_attack_paths(
     limit: int = Query(default=50, ge=1, le=200),
 ) -> list[AttackPath]:
     """List all computed attack paths with pagination."""
-    return _computed_paths[offset : offset + limit]
+    with _paths_lock:
+        return _computed_paths[offset : offset + limit]
 
 
 @router.get("/stats")
 async def get_attack_path_stats() -> dict:
     """Get statistics about computed attack paths."""
-    if not _computed_paths:
+    with _paths_lock:
+        if not _computed_paths:
+            return {
+                "total_paths": 0,
+                "average_risk_score": 0.0,
+                "high_risk_count": 0,
+                "average_steps": 0.0,
+            }
+
+        risk_scores = [p.total_risk_score for p in _computed_paths]
+        steps_counts = [len(p.steps) for p in _computed_paths]
+
         return {
-            "total_paths": 0,
-            "average_risk_score": 0.0,
-            "high_risk_count": 0,
-            "average_steps": 0.0,
+            "total_paths": len(_computed_paths),
+            "average_risk_score": sum(risk_scores) / len(risk_scores),
+            "high_risk_count": sum(1 for s in risk_scores if s > 0.7),
+            "average_steps": sum(steps_counts) / len(steps_counts),
+            "max_risk_score": max(risk_scores),
+            "min_risk_score": min(risk_scores),
         }
-
-    risk_scores = [p.total_risk_score for p in _computed_paths]
-    steps_counts = [len(p.steps) for p in _computed_paths]
-
-    return {
-        "total_paths": len(_computed_paths),
-        "average_risk_score": sum(risk_scores) / len(risk_scores),
-        "high_risk_count": sum(1 for s in risk_scores if s > 0.7),
-        "average_steps": sum(steps_counts) / len(steps_counts),
-        "max_risk_score": max(risk_scores),
-        "min_risk_score": min(risk_scores),
-    }
 
 
 @router.get("/techniques")
@@ -227,10 +236,11 @@ async def simulate_attack_path(
     """Run Monte Carlo simulation on a computed attack path."""
     # Find the path by ID
     target_path: Optional[AttackPath] = None
-    for path in _computed_paths:
-        if path.id == config.path_id:
-            target_path = path
-            break
+    with _paths_lock:
+        for path in _computed_paths:
+            if path.id == config.path_id:
+                target_path = path
+                break
 
     if target_path is None:
         raise HTTPException(status_code=404, detail=f"Path {config.path_id} not found")
@@ -247,7 +257,8 @@ async def simulate_attack_path(
 @router.get("/{path_id}", response_model=AttackPath)
 async def get_attack_path(path_id: str) -> AttackPath:
     """Get a specific computed attack path by ID."""
-    for path in _computed_paths:
-        if path.id == path_id:
-            return path
+    with _paths_lock:
+        for path in _computed_paths:
+            if path.id == path_id:
+                return path
     raise HTTPException(status_code=404, detail=f"Path {path_id} not found")
