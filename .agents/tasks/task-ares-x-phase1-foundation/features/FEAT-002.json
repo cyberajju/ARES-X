@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Backend API Gateway (Go) - REST API with JWT auth, RBAC, routing, and all endpoint handlers for auth, assets, graph, attack paths, and dashboard. Complete Go service with clean architecture.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Create /backend/api-gateway/go.mod and go.sum with module path github.com/cyberajju/ARES-X/backend/api-gateway and Go 1.21+",
     "Create /backend/api-gateway/main.go with server startup, graceful shutdown, config loading from env vars, structured logging setup",
@@ -35,5 +35,5 @@
     "Run 'go build ./...' in /backend/api-gateway/ to verify compilation (stdlib-only code should compile without network)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Go 1.25.1 available at /opt/toolchains/.local/share/mise/installs/go/1.25.1/bin/go. Used go1.22 in go.mod since the new ServeMux pattern matching (METHOD /path) and r.PathValue() require Go 1.22+. Both go build ./... and go vet ./... pass with zero external dependencies. All 23 files created implementing the full API gateway."
 }
