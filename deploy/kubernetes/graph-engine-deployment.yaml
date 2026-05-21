@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graph-engine
+  namespace: ares-x
+  labels:
+    app.kubernetes.io/name: graph-engine
+    app.kubernetes.io/part-of: ares-x
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: graph-engine
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: graph-engine
+        app.kubernetes.io/part-of: ares-x
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: graph-engine
+          image: ares-x/graph-engine:latest
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ares-x-config
+            - secretRef:
+                name: ares-x-secrets
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: GRPC_PORT
+              value: "50051"
+          livenessProbe:
+            exec:
+              command:
+                - /bin/grpc-health-probe
+                - -addr=:50051
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/grpc-health-probe
+                - -addr=:50051
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graph-engine
+  namespace: ares-x
+  labels:
+    app.kubernetes.io/name: graph-engine
+    app.kubernetes.io/part-of: ares-x
+spec:
+  type: ClusterIP
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: grpc
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: graph-engine

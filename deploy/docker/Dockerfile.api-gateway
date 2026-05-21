@@ -1,0 +1,36 @@
+# Stage 1: Build the Go binary
+FROM golang:1.21-alpine AS builder
+
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /src
+
+COPY backend/api-gateway/go.mod backend/api-gateway/go.sum ./
+RUN go mod download
+
+COPY backend/api-gateway/ ./
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -o /bin/api-gateway \
+    ./cmd/server
+
+# Stage 2: Production runtime
+FROM alpine:3.19 AS runner
+
+RUN apk add --no-cache ca-certificates wget tzdata && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /bin/api-gateway ./api-gateway
+
+USER appuser
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["./api-gateway"]

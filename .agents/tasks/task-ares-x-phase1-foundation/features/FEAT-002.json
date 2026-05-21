@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Backend API Gateway (Go) - REST API with JWT auth, RBAC, routing, and all endpoint handlers for auth, assets, graph, attack paths, and dashboard. Complete Go service with clean architecture.",
+  "status": "pending",
+  "steps": [
+    "Create /backend/api-gateway/go.mod and go.sum with module path github.com/cyberajju/ARES-X/backend/api-gateway and Go 1.21+",
+    "Create /backend/api-gateway/main.go with server startup, graceful shutdown, config loading from env vars, structured logging setup",
+    "Create /backend/api-gateway/internal/config/config.go with configuration struct loading from environment variables (server port, JWT secret, DB URL, service URLs, log level)",
+    "Create /backend/api-gateway/internal/middleware/auth.go with JWT authentication middleware - token extraction from Authorization header, validation, claims parsing, context injection",
+    "Create /backend/api-gateway/internal/middleware/rbac.go with role-based access control middleware - role hierarchy (Admin > Analyst > Operator > Executive > ReadOnly), permission checking per endpoint",
+    "Create /backend/api-gateway/internal/middleware/logging.go with structured request logging middleware - method, path, status, duration, request ID",
+    "Create /backend/api-gateway/internal/middleware/cors.go with CORS middleware for frontend communication",
+    "Create /backend/api-gateway/internal/models/ with Go structs: user.go (User, Role, Session, Credentials), asset.go (Asset, AssetType, Criticality, AssetFilter), graph.go (GraphNode, GraphEdge, GraphQuery, PathResult), attack_path.go (AttackPath, PathStep, TTP, Simulation), dashboard.go (DashboardStats, Alert, SystemStatus), response.go (ApiResponse, PaginatedResponse, ErrorResponse)",
+    "Create /backend/api-gateway/internal/handlers/auth.go with handlers: Login (credential validation, JWT generation), Logout (session invalidation), RefreshToken, InitMFA, VerifyMFA",
+    "Create /backend/api-gateway/internal/handlers/assets.go with handlers: ListAssets (pagination, filtering), GetAsset, CreateAsset, UpdateAsset, DeleteAsset, SearchAssets, BulkImport",
+    "Create /backend/api-gateway/internal/handlers/graph.go with handlers: QueryNodes, QueryEdges, GetPaths, GetBlastRadius, GetDependencies",
+    "Create /backend/api-gateway/internal/handlers/attack_paths.go with handlers: ComputeAttackPaths, ListAttackPaths, GetAttackPathDetails, GetPathScore",
+    "Create /backend/api-gateway/internal/handlers/dashboard.go with handlers: GetDashboardStats, GetAlerts, GetSystemStatus, GetRecentActivity",
+    "Create /backend/api-gateway/internal/router/router.go setting up all routes with proper middleware chains (public routes for auth, protected routes for everything else, admin-only routes)",
+    "Create /backend/api-gateway/internal/services/jwt.go with JWT token generation (access + refresh tokens), validation, and claims management using standard library crypto",
+    "Create /backend/api-gateway/internal/services/audit.go with audit logging service for security events"
+  ],
+  "acceptance_criteria": [
+    "Go code compiles with go build (stdlib only, no external deps beyond standard library)",
+    "Clean architecture with handlers/services/models separation",
+    "JWT auth middleware properly validates tokens and injects claims into context",
+    "RBAC middleware enforces role hierarchy",
+    "All API endpoints have proper request validation and error responses",
+    "Structured JSON logging on all requests",
+    "Graceful shutdown handling"
+  ],
+  "verification": [
+    "Run 'go vet ./...' in /backend/api-gateway/ to verify code correctness",
+    "Run 'go build ./...' in /backend/api-gateway/ to verify compilation (stdlib-only code should compile without network)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

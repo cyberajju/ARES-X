@@ -1,0 +1,7 @@
+{
+  "task_id": "task-ares-x-phase1-foundation",
+  "task_description": "Build Phase 1 Core Foundation of ARES-X - a military-grade cyber battlefield and infrastructure resilience platform. Monorepo with Next.js frontend, Go API gateway and asset service, Rust graph engine, Python attack path engine, protobuf definitions, deployment configs, and documentation.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

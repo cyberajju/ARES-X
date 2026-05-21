@@ -1,0 +1,26 @@
+{
+  "project_type": "Monorepo with Next.js frontend, Go microservices, Rust graph engine, Python ML service",
+  "language": "TypeScript, Go, Rust, Python",
+  "build_system": "Per-service: npm/pnpm for frontend, go build for Go services, cargo build for Rust, pip/poetry for Python. Docker Compose for orchestration.",
+  "test_framework": "Jest for frontend, go test for Go, cargo test for Rust, pytest for Python",
+  "build_command": "N/A - INTEGRATIONS_ONLY network, cannot install dependencies. Code must be syntactically valid and structurally correct.",
+  "test_command": "N/A - INTEGRATIONS_ONLY network, cannot run tests requiring dependencies.",
+  "verification_instructions": "Since no network access: verify code compiles syntactically (TypeScript via tsc --noEmit where possible with local TS, Go via go vet/build for stdlib-only code, Python via python -c 'import ast; ast.parse(open(f).read())', Rust via syntax checks). Verify file structure is complete.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "N/A - greenfield project, no setup available yet",
+  "environment_constraints": "INTEGRATIONS_ONLY network - NO external package downloads. Cannot run npm install, pip install, cargo build with external crates, go mod download, or docker pull. All code must be written to be correct but verified only via syntax/AST checks. Available: Python 3.11, Node.js 22, Go 1.25.1, Rust 1.92.0, npm, pnpm, TypeScript, prettier, eslint.",
+  "contribution_requirements": "N/A - new project",
+  "key_patterns": "Clean architecture, type safety, structured logging, env-based config, idiomatic code per language, military/tactical dark theme UI",
+  "relevant_files": [
+    "/projects/sandbox/ARES-X/frontend/",
+    "/projects/sandbox/ARES-X/backend/api-gateway/",
+    "/projects/sandbox/ARES-X/backend/graph-engine/",
+    "/projects/sandbox/ARES-X/backend/asset-service/",
+    "/projects/sandbox/ARES-X/backend/attack-path-engine/",
+    "/projects/sandbox/ARES-X/shared/proto/",
+    "/projects/sandbox/ARES-X/shared/types/",
+    "/projects/sandbox/ARES-X/deploy/",
+    "/projects/sandbox/ARES-X/docs/"
+  ],
+  "directory_structure": "Monorepo: /frontend (Next.js), /backend/api-gateway (Go), /backend/graph-engine (Rust), /backend/asset-service (Go), /backend/attack-path-engine (Python), /shared/proto (protobuf), /shared/types (TS), /deploy (Docker/K8s), /docs (architecture)"
+}
