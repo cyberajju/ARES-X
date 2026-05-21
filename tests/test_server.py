@@ -391,6 +391,65 @@ class TestWebSocketFrames(unittest.TestCase):
         self.assertEqual(opcode, OPCODE_PING)
         self.assertEqual(decoded_payload, b'')
 
+    def test_frame_exceeding_max_size_rejected(self):
+        """Frames with payload exceeding max_payload_size are rejected."""
+        # Create a frame with 1000-byte payload
+        payload = b'x' * 1000
+        frame = encode_frame(OPCODE_BINARY, payload, mask=False)
+
+        async def decode_with_limit():
+            reader = asyncio.StreamReader()
+            reader.feed_data(frame)
+            # Set max to 500 bytes - the 1000-byte frame should be rejected
+            return await decode_frame(reader, max_payload_size=500)
+
+        with self.assertRaises(ValueError) as ctx:
+            self._run(decode_with_limit())
+        self.assertIn('1000', str(ctx.exception))
+        self.assertIn('500', str(ctx.exception))
+
+    def test_frame_within_max_size_accepted(self):
+        """Frames within max_payload_size are accepted normally."""
+        payload = b'x' * 100
+        frame = encode_frame(OPCODE_BINARY, payload, mask=False)
+
+        async def decode_with_limit():
+            reader = asyncio.StreamReader()
+            reader.feed_data(frame)
+            return await decode_frame(reader, max_payload_size=500)
+
+        opcode, decoded_payload = self._run(decode_with_limit())
+        self.assertEqual(opcode, OPCODE_BINARY)
+        self.assertEqual(decoded_payload, payload)
+
+    def test_frame_size_limit_zero_disables_check(self):
+        """When max_payload_size is 0, no size limit is enforced."""
+        payload = b'y' * 70000
+        frame = encode_frame(OPCODE_BINARY, payload, mask=False)
+
+        async def decode_no_limit():
+            reader = asyncio.StreamReader()
+            reader.feed_data(frame)
+            return await decode_frame(reader, max_payload_size=0)
+
+        opcode, decoded_payload = self._run(decode_no_limit())
+        self.assertEqual(opcode, OPCODE_BINARY)
+        self.assertEqual(len(decoded_payload), 70000)
+
+    def test_frame_size_limit_extended_length(self):
+        """Size limit catches oversized frames using 16-bit extended length."""
+        # Create a frame with 200-byte payload (uses 16-bit length since >= 126)
+        payload = b'z' * 200
+        frame = encode_frame(OPCODE_BINARY, payload, mask=False)
+
+        async def decode_with_limit():
+            reader = asyncio.StreamReader()
+            reader.feed_data(frame)
+            return await decode_frame(reader, max_payload_size=100)
+
+        with self.assertRaises(ValueError):
+            self._run(decode_with_limit())
+
 
 class TestHTTPParsing(unittest.TestCase):
     """Test HTTP request parsing and response building."""

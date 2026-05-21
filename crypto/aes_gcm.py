@@ -4,6 +4,29 @@ AES-256-GCM authenticated encryption via ctypes bindings to OpenSSL libcrypto.
 Provides encrypt and decrypt functions using the EVP cipher API.
 Uses 12-byte random nonce and 16-byte authentication tag.
 Supports Additional Authenticated Data (AAD).
+
+Nonce Safety Model
+------------------
+Each AES-GCM call in this module uses a random 96-bit (12-byte) nonce. The
+birthday bound for random nonces is approximately 2^48 encryptions before a
+50% collision probability under a single key. Nonce reuse under the same key
+is catastrophic for GCM (leaks XOR of plaintexts and enables tag forgery).
+
+In the ARES-X protocol, nonce collision is structurally prevented because
+the Double Ratchet algorithm derives a unique, single-use message key for
+every encryption via the chain KDF (_kdf_ck). Each AES-GCM call therefore
+operates under a fresh key, meaning even if two random nonces happen to
+collide, they are applied to different keys and no security property is
+violated.
+
+State-Restore Risk: If a serialized ratchet state is restored from backup
+(e.g., via RatchetState.from_dict called on the same serialized snapshot
+more than once), the same message key will be derived again. In that case,
+the random nonce provides the only collision resistance, which is limited
+to the birthday bound. Callers that persist ratchet state must ensure a
+given state snapshot is never used for encryption more than once. Consuming
+code should invalidate or delete serialized state after restoration to
+prevent accidental key reuse.
 """
 
 import ctypes

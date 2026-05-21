@@ -45,9 +45,13 @@ class KeyStore:
         self._passphrase = passphrase
         self._encryption_key: Optional[bytes] = None
 
+        self._conn = sqlite3.connect(db_path)
+        self._init_tables()
+
         if passphrase:
-            # Derive encryption key from passphrase via HKDF
-            salt = b"ARES-X_KEYSTORE_SALT"
+            # Retrieve or generate random salt from metadata table
+            salt = self._get_or_create_salt()
+            # Derive encryption key from passphrase via HKDF with random salt
             self._encryption_key = derive_key(
                 ikm=passphrase.encode("utf-8"),
                 salt=salt,
@@ -55,12 +59,15 @@ class KeyStore:
                 length=32,
             )
 
-        self._conn = sqlite3.connect(db_path)
-        self._init_tables()
-
     def _init_tables(self):
         """Create storage tables if they don't exist."""
         cursor = self._conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value BLOB NOT NULL
+            )
+        """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS identity_keys (
                 id INTEGER PRIMARY KEY,
@@ -87,6 +94,29 @@ class KeyStore:
             )
         """)
         self._conn.commit()
+
+    def _get_or_create_salt(self) -> bytes:
+        """
+        Retrieve the random salt from the metadata table, or generate and
+        persist a new 32-byte random salt on first key store creation.
+
+        Returns:
+            32-byte random salt for passphrase key derivation
+        """
+        cursor = self._conn.cursor()
+        cursor.execute("SELECT value FROM metadata WHERE key = 'kdf_salt'")
+        row = cursor.fetchone()
+        if row is not None:
+            return bytes(row[0])
+
+        # First-time creation: generate a cryptographically random salt
+        salt = generate_random_bytes(32)
+        cursor.execute(
+            "INSERT INTO metadata (key, value) VALUES ('kdf_salt', ?)",
+            (salt,),
+        )
+        self._conn.commit()
+        return salt
 
     def _protect_key(self, key_bytes: bytes) -> bytes:
         """Encrypt private key if passphrase is set, otherwise return raw."""

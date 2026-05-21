@@ -88,12 +88,21 @@ def encode_frame(opcode: int, payload: bytes, mask: bool = False) -> bytes:
     return bytes(frame)
 
 
-async def decode_frame(reader: asyncio.StreamReader):
+async def decode_frame(reader: asyncio.StreamReader, max_payload_size: int = 0):
     """
     Decode a WebSocket frame from a stream reader.
 
+    Args:
+        reader: asyncio StreamReader to read from
+        max_payload_size: Maximum allowed payload size in bytes. If > 0,
+            frames exceeding this limit will raise a ValueError to prevent
+            memory exhaustion from malicious clients. Set to 0 to disable.
+
     Returns:
         Tuple of (opcode, payload) or (None, None) on connection close.
+
+    Raises:
+        ValueError: If payload_length exceeds max_payload_size
     """
     # Read first two bytes
     data = await reader.readexactly(2)
@@ -115,6 +124,13 @@ async def decode_frame(reader: asyncio.StreamReader):
         data = await reader.readexactly(8)
         payload_length = struct.unpack('!Q', data)[0]
 
+    # Reject frames that exceed the configured maximum size
+    if max_payload_size > 0 and payload_length > max_payload_size:
+        raise ValueError(
+            f"Frame payload size {payload_length} exceeds maximum allowed "
+            f"size {max_payload_size}"
+        )
+
     # Read masking key if present
     masking_key = None
     if is_masked:
@@ -133,9 +149,11 @@ async def decode_frame(reader: asyncio.StreamReader):
 class WebSocketConnection:
     """Represents a single WebSocket connection."""
 
-    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter,
+                 max_message_size: int = 0):
         self.reader = reader
         self.writer = writer
+        self.max_message_size = max_message_size
         self.user_id = None
         self.session_id = secrets.token_hex(16)
         self.connected_at = time.time()
@@ -152,7 +170,7 @@ class WebSocketConnection:
 
     async def read_frame(self):
         """Read a WebSocket frame. Returns (opcode, payload)."""
-        return await decode_frame(self.reader)
+        return await decode_frame(self.reader, max_payload_size=self.max_message_size)
 
     async def send_message(self, data: bytes):
         """Send a binary message to the client."""
@@ -218,7 +236,8 @@ class WebSocketServer:
                 writer.close()
                 return
 
-            conn = WebSocketConnection(reader, writer)
+            conn = WebSocketConnection(reader, writer,
+                                       max_message_size=self.config.max_message_size)
 
             # First message must be authentication
             authenticated = await self._authenticate(conn)
@@ -239,6 +258,10 @@ class WebSocketServer:
 
         except asyncio.IncompleteReadError:
             logger.debug("Connection closed unexpectedly")
+        except ValueError as e:
+            logger.warning(f"Protocol error: {e}")
+            if conn and not conn.is_closed:
+                await conn.close(code=1009, reason='Message too big')
         except Exception as e:
             logger.error(f"Connection error: {e}")
         finally:

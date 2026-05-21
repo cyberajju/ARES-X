@@ -432,5 +432,87 @@ class TestE2ESessionPersistence(unittest.TestCase):
         self.assertEqual(decrypted, plaintext)
 
 
+class TestKeyStoreRandomSalt(unittest.TestCase):
+    """Test that key store uses a unique random salt per database."""
+
+    def test_different_databases_produce_different_encryption_keys(self):
+        """Two KeyStore instances with the same passphrase but different
+        databases should produce different encryption keys because each
+        database gets its own random salt."""
+        passphrase = "same-passphrase-for-both"
+
+        ks1 = KeyStore(":memory:", passphrase=passphrase)
+        ks2 = KeyStore(":memory:", passphrase=passphrase)
+
+        # The encryption keys should differ because the salts are random
+        self.assertIsNotNone(ks1._encryption_key)
+        self.assertIsNotNone(ks2._encryption_key)
+        self.assertNotEqual(ks1._encryption_key, ks2._encryption_key)
+
+        ks1.close()
+        ks2.close()
+
+    def test_same_database_produces_same_encryption_key(self):
+        """Reopening the same database with the same passphrase should
+        produce the same encryption key (salt is persisted)."""
+        import tempfile
+        import os
+
+        tmp_file = tempfile.mktemp(suffix='.db')
+        try:
+            passphrase = "my-secure-passphrase"
+
+            # First open - creates the salt
+            ks1 = KeyStore(tmp_file, passphrase=passphrase)
+            key1 = ks1._encryption_key
+            ks1.close()
+
+            # Second open - reads the existing salt
+            ks2 = KeyStore(tmp_file, passphrase=passphrase)
+            key2 = ks2._encryption_key
+            ks2.close()
+
+            self.assertEqual(key1, key2)
+        finally:
+            if os.path.exists(tmp_file):
+                os.unlink(tmp_file)
+
+    def test_salt_is_32_bytes(self):
+        """The persisted salt should be 32 bytes."""
+        ks = KeyStore(":memory:", passphrase="test")
+        cursor = ks._conn.cursor()
+        cursor.execute("SELECT value FROM metadata WHERE key = 'kdf_salt'")
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(len(row[0]), 32)
+        ks.close()
+
+    def test_data_encrypted_with_random_salt_decrypts(self):
+        """Keys encrypted with the random-salt-derived key can be decrypted
+        on reopening the same database."""
+        import tempfile
+        import os
+
+        tmp_file = tempfile.mktemp(suffix='.db')
+        try:
+            passphrase = "encryption-test"
+
+            # Create key store and generate identity
+            ks1 = KeyStore(tmp_file, passphrase=passphrase)
+            identity1 = ks1.generate_identity()
+            pub_key = identity1.public_key
+            ks1.close()
+
+            # Reopen and verify we can read the identity key back
+            ks2 = KeyStore(tmp_file, passphrase=passphrase)
+            identity2 = ks2.get_identity_key()
+            self.assertIsNotNone(identity2)
+            self.assertEqual(identity2.public_key, pub_key)
+            ks2.close()
+        finally:
+            if os.path.exists(tmp_file):
+                os.unlink(tmp_file)
+
+
 if __name__ == "__main__":
     unittest.main()
