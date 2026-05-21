@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package ares.graph;
+
+option go_package = "github.com/ares-x/shared/proto/graph";
+
+import "common.proto";
+
+// NodeType defines the type of node in the graph.
+enum NodeType {
+  NODE_TYPE_UNSPECIFIED = 0;
+  NODE_TYPE_SERVER = 1;
+  NODE_TYPE_WORKSTATION = 2;
+  NODE_TYPE_NETWORK_DEVICE = 3;
+  NODE_TYPE_DATABASE = 4;
+  NODE_TYPE_APPLICATION = 5;
+  NODE_TYPE_USER = 6;
+  NODE_TYPE_SERVICE_ACCOUNT = 7;
+  NODE_TYPE_CLOUD_RESOURCE = 8;
+  NODE_TYPE_CONTAINER = 9;
+  NODE_TYPE_IDENTITY = 10;
+}
+
+// EdgeType defines the type of relationship between nodes.
+enum EdgeType {
+  EDGE_TYPE_UNSPECIFIED = 0;
+  EDGE_TYPE_NETWORK_ACCESS = 1;
+  EDGE_TYPE_CREDENTIAL_ACCESS = 2;
+  EDGE_TYPE_PRIVILEGE_ESCALATION = 3;
+  EDGE_TYPE_LATERAL_MOVEMENT = 4;
+  EDGE_TYPE_DATA_FLOW = 5;
+  EDGE_TYPE_TRUST_RELATIONSHIP = 6;
+  EDGE_TYPE_MEMBERSHIP = 7;
+  EDGE_TYPE_DEPENDENCY = 8;
+}
+
+// Node represents a vertex in the attack graph.
+message Node {
+  ares.common.UUID id = 1;
+  string name = 2;
+  NodeType type = 3;
+  map<string, string> properties = 4;
+  double risk_score = 5;
+  ares.common.Status status = 6;
+  ares.common.Timestamp created_at = 7;
+  ares.common.Timestamp updated_at = 8;
+}
+
+// Edge represents a directed relationship between two nodes.
+message Edge {
+  ares.common.UUID id = 1;
+  ares.common.UUID source_id = 2;
+  ares.common.UUID target_id = 3;
+  EdgeType type = 4;
+  double weight = 5;
+  map<string, string> properties = 6;
+  ares.common.Timestamp created_at = 7;
+}
+
+// QueryNodesRequest filters nodes in the graph.
+message QueryNodesRequest {
+  repeated NodeType types = 1;
+  map<string, string> filters = 2;
+  double min_risk_score = 3;
+  ares.common.PaginationRequest pagination = 4;
+  ares.common.SortField sort = 5;
+}
+
+// QueryNodesResponse returns matching nodes.
+message QueryNodesResponse {
+  repeated Node nodes = 1;
+  ares.common.Pagination pagination = 2;
+}
+
+// QueryEdgesRequest filters edges in the graph.
+message QueryEdgesRequest {
+  repeated EdgeType types = 1;
+  ares.common.UUID source_id = 2;
+  ares.common.UUID target_id = 3;
+  ares.common.PaginationRequest pagination = 4;
+}
+
+// QueryEdgesResponse returns matching edges.
+message QueryEdgesResponse {
+  repeated Edge edges = 1;
+  ares.common.Pagination pagination = 2;
+}
+
+// FindPathsRequest specifies source and target for path finding.
+message FindPathsRequest {
+  ares.common.UUID source_id = 1;
+  ares.common.UUID target_id = 2;
+  int32 max_depth = 3;
+  int32 max_paths = 4;
+  repeated EdgeType allowed_edge_types = 5;
+}
+
+// Path represents a single path through the graph.
+message Path {
+  repeated Node nodes = 1;
+  repeated Edge edges = 2;
+  double total_weight = 3;
+  int32 hop_count = 4;
+}
+
+// FindPathsResponse returns discovered paths.
+message FindPathsResponse {
+  repeated Path paths = 1;
+  int32 total_paths_found = 2;
+}
+
+// ComputeBlastRadiusRequest identifies the starting node for blast radius analysis.
+message ComputeBlastRadiusRequest {
+  ares.common.UUID node_id = 1;
+  int32 max_depth = 2;
+  repeated EdgeType edge_types = 3;
+}
+
+// BlastRadiusResult contains the computed blast radius.
+message BlastRadiusResult {
+  ares.common.UUID origin_id = 1;
+  repeated Node affected_nodes = 2;
+  repeated Edge traversed_edges = 3;
+  int32 total_affected = 4;
+  double aggregate_risk_score = 5;
+  map<string, int32> affected_by_type = 6;
+}
+
+// GetCriticalNodesRequest requests computation of the most critical nodes.
+message GetCriticalNodesRequest {
+  int32 top_n = 1;
+  repeated NodeType types = 2;
+  string scoring_algorithm = 3;
+}
+
+// CriticalNode represents a node with its criticality score.
+message CriticalNode {
+  Node node = 1;
+  double criticality_score = 2;
+  int32 incoming_paths = 3;
+  int32 outgoing_paths = 4;
+  double betweenness_centrality = 5;
+}
+
+// GetCriticalNodesResponse returns the top critical nodes.
+message GetCriticalNodesResponse {
+  repeated CriticalNode critical_nodes = 1;
+}
+
+// GraphService provides graph query and analysis operations.
+service GraphService {
+  // QueryNodes retrieves nodes matching the given filters.
+  rpc QueryNodes(QueryNodesRequest) returns (QueryNodesResponse);
+
+  // QueryEdges retrieves edges matching the given filters.
+  rpc QueryEdges(QueryEdgesRequest) returns (QueryEdgesResponse);
+
+  // FindPaths discovers paths between two nodes.
+  rpc FindPaths(FindPathsRequest) returns (FindPathsResponse);
+
+  // ComputeBlastRadius calculates the impact radius from a compromised node.
+  rpc ComputeBlastRadius(ComputeBlastRadiusRequest) returns (BlastRadiusResult);
+
+  // GetCriticalNodes identifies the most critical nodes in the graph.
+  rpc GetCriticalNodes(GetCriticalNodesRequest) returns (GetCriticalNodesResponse);
+}

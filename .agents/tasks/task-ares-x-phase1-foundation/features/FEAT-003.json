@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Rust Graph Engine - in-memory graph data structure with algorithms (shortest path, attack path discovery, blast radius, critical node identification, dependency analysis) and a gRPC server interface. Uses only standard library and manually-implemented algorithms (no external crates for core logic).",
+  "status": "completed",
+  "steps": [
+    "Create /backend/graph-engine/Cargo.toml with package metadata, edition 2021. Only include serde, serde_json for serialization, and tokio + tonic for gRPC (these won't download but structure is correct)",
+    "Create /backend/graph-engine/src/main.rs with server startup, config loading, graceful shutdown",
+    "Create /backend/graph-engine/src/graph/mod.rs exporting graph module",
+    "Create /backend/graph-engine/src/graph/types.rs with Node struct (id, node_type, label, properties HashMap, criticality score), Edge struct (id, source, target, edge_type, weight, properties), NodeType enum (Server, Network, Identity, CloudResource, OTDevice, Application, Database, Firewall), EdgeType enum (ConnectsTo, DependsOn, AuthenticatesTo, Contains, AccessibleFrom, RoutesTo)",
+    "Create /backend/graph-engine/src/graph/store.rs with InfraGraph struct - adjacency list representation using HashMap<NodeId, Vec<Edge>>, methods: add_node, remove_node, add_edge, remove_edge, get_node, get_neighbors, get_edges, node_count, edge_count",
+    "Create /backend/graph-engine/src/graph/algorithms.rs with: dijkstra_shortest_path (priority queue via BinaryHeap), find_attack_paths (BFS/DFS with pruning, finds all paths between source and target up to max depth), compute_blast_radius (BFS from compromised node, returns all reachable nodes within N hops weighted by criticality), identify_critical_nodes (betweenness centrality approximation), analyze_dependencies (topological sort, dependency chain detection)",
+    "Create /backend/graph-engine/src/graph/scoring.rs with path risk scoring (combines edge weights, node criticality, path length), blast radius severity calculation, critical infrastructure identification",
+    "Create /backend/graph-engine/src/server/mod.rs exporting server module",
+    "Create /backend/graph-engine/src/server/grpc.rs with gRPC service implementation stubs matching the proto definitions (QueryNodes, QueryEdges, FindPaths, ComputeBlastRadius, GetCriticalNodes)",
+    "Create /backend/graph-engine/src/server/handlers.rs with request handling logic that interfaces between gRPC requests and graph operations",
+    "Create /backend/graph-engine/src/config.rs with configuration loading from environment variables (listen address, log level, max graph size)",
+    "Create /backend/graph-engine/src/error.rs with custom error types using thiserror pattern (manually implemented, no external crate dependency required for compilation check)",
+    "Create /backend/graph-engine/build.rs for protobuf compilation setup (references shared/proto/graph.proto)"
+  ],
+  "acceptance_criteria": [
+    "Rust code has valid syntax (verified via syntax parsing)",
+    "Graph data structure supports efficient node/edge operations",
+    "Dijkstra's algorithm correctly implements priority-queue based shortest path",
+    "Attack path discovery finds all paths with configurable depth limit",
+    "Blast radius computation uses BFS with criticality weighting",
+    "Critical node identification uses betweenness centrality",
+    "All algorithms handle edge cases (disconnected graphs, cycles, empty graphs)",
+    "Code is idiomatic Rust with proper ownership, borrowing, and error handling"
+  ],
+  "verification": [
+    "Verify Rust syntax is valid by checking all .rs files parse correctly",
+    "Review algorithm implementations for correctness (Dijkstra uses BinaryHeap, BFS uses VecDeque, etc.)"
+  ],
+  "blocked_reason": null,
+  "findings": "All core graph algorithms (Dijkstra, all-paths DFS, blast radius BFS, betweenness centrality, dependency cycle detection) verified correct via standalone compilation and runtime testing with rustc 1.92.0. The algorithms use only std library types (BinaryHeap, VecDeque, HashMap, HashSet). External crate references (serde, tokio, tonic) are in Cargo.toml but cannot be downloaded in INTEGRATIONS_ONLY mode. Config.rs and error.rs compile cleanly as standalone libs. Rust toolchain available at /opt/toolchains/.rustup/toolchains/1.92.0-x86_64-unknown-linux-gnu/bin/."
+}

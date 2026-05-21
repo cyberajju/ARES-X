@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package ares.common;
+
+option go_package = "github.com/ares-x/shared/proto/common";
+
+// Timestamp represents a point in time with nanosecond precision.
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+// UUID represents a universally unique identifier.
+message UUID {
+  string value = 1;
+}
+
+// Pagination controls for list requests.
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_count = 3;
+  int32 total_pages = 4;
+}
+
+// PaginationRequest is used in list request messages.
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// SortOrder defines the direction of sorting.
+enum SortOrder {
+  SORT_ORDER_UNSPECIFIED = 0;
+  SORT_ORDER_ASC = 1;
+  SORT_ORDER_DESC = 2;
+}
+
+// SortField defines a field and direction for sorting.
+message SortField {
+  string field = 1;
+  SortOrder order = 2;
+}
+
+// Status represents the general status of an entity.
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+  STATUS_INACTIVE = 2;
+  STATUS_PENDING = 3;
+  STATUS_ERROR = 4;
+  STATUS_DELETED = 5;
+}
+
+// ErrorDetail provides structured error information.
+message ErrorDetail {
+  int32 code = 1;
+  string message = 2;
+  string field = 3;
+}
+
+// HealthCheckResponse represents the health status of a service.
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+  string version = 2;
+  Timestamp uptime_since = 3;
+}

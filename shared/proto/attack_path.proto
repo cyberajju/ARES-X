@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package ares.attack_path;
+
+option go_package = "github.com/ares-x/shared/proto/attack_path";
+
+import "common.proto";
+
+// Tactic represents a MITRE ATT&CK tactic category.
+enum Tactic {
+  TACTIC_UNSPECIFIED = 0;
+  TACTIC_RECONNAISSANCE = 1;
+  TACTIC_RESOURCE_DEVELOPMENT = 2;
+  TACTIC_INITIAL_ACCESS = 3;
+  TACTIC_EXECUTION = 4;
+  TACTIC_PERSISTENCE = 5;
+  TACTIC_PRIVILEGE_ESCALATION = 6;
+  TACTIC_DEFENSE_EVASION = 7;
+  TACTIC_CREDENTIAL_ACCESS = 8;
+  TACTIC_DISCOVERY = 9;
+  TACTIC_LATERAL_MOVEMENT = 10;
+  TACTIC_COLLECTION = 11;
+  TACTIC_COMMAND_AND_CONTROL = 12;
+  TACTIC_EXFILTRATION = 13;
+  TACTIC_IMPACT = 14;
+}
+
+// Technique represents a specific MITRE ATT&CK technique.
+message Technique {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  Tactic tactic = 4;
+  double severity = 5;
+  repeated string mitigations = 6;
+  repeated string data_sources = 7;
+}
+
+// TTP (Tactics, Techniques, and Procedures) represents an adversary behavior.
+message TTP {
+  string id = 1;
+  Tactic tactic = 2;
+  Technique technique = 3;
+  string procedure = 4;
+  double likelihood = 5;
+  double impact = 6;
+}
+
+// PathStep represents a single step in an attack path.
+message PathStep {
+  int32 order = 1;
+  ares.common.UUID node_id = 2;
+  string node_name = 3;
+  TTP ttp = 4;
+  double success_probability = 5;
+  double cumulative_risk = 6;
+  string description = 7;
+  repeated string prerequisites = 8;
+  map<string, string> evidence = 9;
+}
+
+// PathScore provides scoring details for an attack path.
+message PathScore {
+  double overall_score = 1;
+  double likelihood_score = 2;
+  double impact_score = 3;
+  double complexity_score = 4;
+  string risk_level = 5;
+}
+
+// AttackPath represents a complete attack path through the infrastructure.
+message AttackPath {
+  ares.common.UUID id = 1;
+  string name = 2;
+  string description = 3;
+  repeated PathStep steps = 4;
+  PathScore score = 5;
+  ares.common.UUID source_node_id = 6;
+  ares.common.UUID target_node_id = 7;
+  int32 total_steps = 8;
+  repeated string affected_assets = 9;
+  repeated string recommended_mitigations = 10;
+  ares.common.Timestamp computed_at = 11;
+  ares.common.Timestamp expires_at = 12;
+}
+
+// ComputePathsRequest initiates attack path computation.
+message ComputePathsRequest {
+  ares.common.UUID source_node_id = 1;
+  ares.common.UUID target_node_id = 2;
+  int32 max_depth = 3;
+  int32 max_paths = 4;
+  repeated Tactic include_tactics = 5;
+  double min_likelihood = 6;
+  bool include_mitigations = 7;
+}
+
+// ComputePathsResponse returns computed attack paths.
+message ComputePathsResponse {
+  repeated AttackPath paths = 1;
+  int32 total_paths = 2;
+  double computation_time_ms = 3;
+  ares.common.Timestamp computed_at = 4;
+}
+
+// ListPathsRequest filters previously computed paths.
+message ListPathsRequest {
+  ares.common.UUID source_node_id = 1;
+  ares.common.UUID target_node_id = 2;
+  double min_score = 3;
+  ares.common.PaginationRequest pagination = 4;
+  ares.common.SortField sort = 5;
+}
+
+// ListPathsResponse returns a paginated list of paths.
+message ListPathsResponse {
+  repeated AttackPath paths = 1;
+  ares.common.Pagination pagination = 2;
+}
+
+// GetPathDetailsRequest retrieves a specific path by ID.
+message GetPathDetailsRequest {
+  ares.common.UUID path_id = 1;
+  bool include_evidence = 2;
+  bool include_mitigations = 3;
+}
+
+// GetPathDetailsResponse returns the full path details.
+message GetPathDetailsResponse {
+  AttackPath path = 1;
+}
+
+// SimulationConfig configures an attack simulation run.
+message SimulationConfig {
+  string name = 1;
+  string description = 2;
+  ares.common.UUID source_node_id = 3;
+  repeated ares.common.UUID target_node_ids = 4;
+  repeated Tactic tactics = 5;
+  int32 max_iterations = 6;
+  double time_limit_seconds = 7;
+  bool assume_breach = 8;
+  map<string, string> parameters = 9;
+}
+
+// SimulationResult contains the output of a simulation run.
+message SimulationResult {
+  ares.common.UUID id = 1;
+  SimulationConfig config = 2;
+  repeated AttackPath discovered_paths = 3;
+  int32 total_paths_found = 4;
+  int32 nodes_visited = 5;
+  int32 edges_traversed = 6;
+  double execution_time_ms = 7;
+  repeated string findings = 8;
+  repeated string recommendations = 9;
+  ares.common.Timestamp started_at = 10;
+  ares.common.Timestamp completed_at = 11;
+}
+
+// RunSimulationRequest starts a new simulation.
+message RunSimulationRequest {
+  SimulationConfig config = 1;
+}
+
+// RunSimulationResponse returns simulation results.
+message RunSimulationResponse {
+  SimulationResult result = 1;
+}
+
+// AttackPathService provides attack path analysis and simulation.
+service AttackPathService {
+  // ComputePaths calculates attack paths between nodes.
+  rpc ComputePaths(ComputePathsRequest) returns (ComputePathsResponse);
+
+  // ListPaths retrieves previously computed attack paths.
+  rpc ListPaths(ListPathsRequest) returns (ListPathsResponse);
+
+  // GetPathDetails returns full details for a specific path.
+  rpc GetPathDetails(GetPathDetailsRequest) returns (GetPathDetailsResponse);
+
+  // RunSimulation executes an attack simulation.
+  rpc RunSimulation(RunSimulationRequest) returns (RunSimulationResponse);
+}

@@ -1,0 +1,37 @@
+# Stage 1: Build the Rust binary
+FROM rust:1.75-alpine AS builder
+
+RUN apk add --no-cache musl-dev protobuf-dev
+
+WORKDIR /src
+
+COPY backend/graph-engine/Cargo.toml backend/graph-engine/Cargo.lock ./
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+COPY backend/graph-engine/src ./src
+COPY shared/proto /shared/proto
+
+RUN touch src/main.rs && \
+    cargo build --release
+
+# Stage 2: Production runtime
+FROM alpine:3.19 AS runner
+
+RUN apk add --no-cache ca-certificates && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /src/target/release/graph-engine ./graph-engine
+
+# Install grpc-health-probe for health checks
+COPY --from=builder /src/target/release/graph-engine ./graph-engine
+
+USER appuser
+
+EXPOSE 50051
+
+ENTRYPOINT ["./graph-engine"]

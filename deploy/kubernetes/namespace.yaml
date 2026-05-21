@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ares-x
+  labels:
+    app.kubernetes.io/name: ares-x
+    app.kubernetes.io/part-of: ares-x
