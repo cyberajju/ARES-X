@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Go Asset Service and Python Attack Path Engine. The Asset Service handles asset data models, ingestion pipeline, relationship mapping, criticality scoring, and REST API. The Attack Path Engine handles attack graph construction, MITRE ATT&CK mapping, scoring, Monte Carlo simulation, and CVE-based vulnerability scoring.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create /backend/asset-service/go.mod with module path github.com/cyberajju/ARES-X/backend/asset-service",
     "Create /backend/asset-service/main.go with server startup, config loading, graceful shutdown",
@@ -52,5 +52,5 @@
     "Validate all Python files with: python3 -c 'import ast, sys; [ast.parse(open(f).read()) for f in sys.argv[1:]]' on all .py files"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Go toolchain found at /opt/toolchains/.local/share/mise/installs/go/1.25.1/bin/go. Go asset service compiles clean with go build and go vet. All 17 Python files pass AST parsing. Monte Carlo simulation uses only stdlib random module. MITRE mapping has 20 real techniques."
 }
