@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Rust Graph Engine - in-memory graph data structure with algorithms (shortest path, attack path discovery, blast radius, critical node identification, dependency analysis) and a gRPC server interface. Uses only standard library and manually-implemented algorithms (no external crates for core logic).",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create /backend/graph-engine/Cargo.toml with package metadata, edition 2021. Only include serde, serde_json for serialization, and tokio + tonic for gRPC (these won't download but structure is correct)",
     "Create /backend/graph-engine/src/main.rs with server startup, config loading, graceful shutdown",
