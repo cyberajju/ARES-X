@@ -1,0 +1,27 @@
+[project]
+name = "ares-x-attack-path-engine"
+version = "0.1.0"
+description = "ARES-X Attack Path Computation Engine"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.109.0",
+    "uvicorn==0.27.0",
+    "pydantic==2.5.3",
+    "pydantic-settings==2.1.0",
+    "numpy==1.26.3",
+    "httpx==0.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.4",
+    "pytest-asyncio==0.23.3",
+    "httpx==0.26.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
