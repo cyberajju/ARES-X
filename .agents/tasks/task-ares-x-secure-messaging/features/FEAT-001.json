@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Implement core cryptographic primitives module - AES-256-GCM, X25519, HKDF, HMAC-SHA512, and crypto utilities. These form the foundation for all encryption in the system. Uses ctypes bindings to OpenSSL libcrypto.so.3 for AES-256-GCM and X25519, and Python standard library hashlib/hmac for HKDF and MAC operations.",
+  "status": "completed",
+  "steps": [
+    "Create crypto/__init__.py with module exports",
+    "Create crypto/utils.py with: secure random generation (secrets module), constant-time comparison, base64 encoding helpers, byte manipulation utilities",
+    "Create crypto/aes_gcm.py implementing AES-256-GCM encryption/decryption using ctypes bindings to OpenSSL EVP API. Use EVP_CIPHER_CTX_new, EVP_EncryptInit_ex with EVP_aes_256_gcm(), EVP_EncryptUpdate, EVP_EncryptFinal_ex, EVP_CIPHER_CTX_ctrl for tag get/set. Set proper argtypes and restypes for all ctypes calls. Handle 12-byte nonce, 16-byte auth tag. Support AAD (additional authenticated data).",
+    "Create crypto/key_exchange.py implementing X25519 Diffie-Hellman key exchange using ctypes bindings to OpenSSL. Use EVP_PKEY_new_raw_private_key with NID_X25519=1034, EVP_PKEY_get_raw_public_key for public key extraction, EVP_PKEY_derive for shared secret computation. Include KeyPair class with generate(), from_private_key(), get_public_key(), compute_shared_secret(peer_public_key) methods.",
+    "Create crypto/hkdf.py implementing HMAC-based Key Derivation Function (RFC 5869) using Python hmac and hashlib modules. Implement both extract and expand phases. Support SHA-256 and SHA-512 as hash functions. Include derive_keys() helper that derives multiple keys from a single input.",
+    "Create crypto/hmac_auth.py implementing message authentication using HMAC-SHA512. Include sign(key, message), verify(key, message, signature) functions with constant-time comparison for verification.",
+    "Create crypto/post_quantum.py as a placeholder module documenting the post-quantum upgrade path. Include abstract interface that future PQ algorithms (Kyber, Dilithium) will implement. Include hybrid key exchange wrapper that combines X25519 + PQ KEM.",
+    "Create tests/test_crypto.py with comprehensive tests: AES-GCM encrypt/decrypt round-trip, wrong key fails, wrong tag fails, AAD mismatch fails; X25519 key generation, shared secret agreement (both parties derive same secret), invalid key rejection; HKDF output length and determinism; HMAC sign/verify and tamper detection."
+  ],
+  "acceptance_criteria": [
+    "python3 -m unittest tests.test_crypto runs and all tests pass",
+    "AES-256-GCM encrypts and decrypts correctly with 32-byte key, 12-byte nonce, 16-byte tag",
+    "X25519 key exchange produces matching 32-byte shared secrets for both parties",
+    "HKDF produces deterministic output for same inputs",
+    "HMAC-SHA512 detects message tampering",
+    "All crypto operations use secure random from secrets module",
+    "No external dependencies - only standard library + ctypes to libcrypto"
+  ],
+  "verification": [
+    "python3 -c \"import py_compile; py_compile.compile('crypto/aes_gcm.py', doraise=True); py_compile.compile('crypto/key_exchange.py', doraise=True); py_compile.compile('crypto/hkdf.py', doraise=True); py_compile.compile('crypto/hmac_auth.py', doraise=True)\"",
+    "python3 -m unittest tests.test_crypto -v"
+  ],
+  "blocked_reason": null,
+  "findings": "All 32 tests pass. OpenSSL ctypes bindings work correctly with libcrypto.so.3. Python 3.9 compatible (used tuple return without type annotation syntax). EVP_PKEY_get_raw_private_key available for key extraction. No issues encountered."
+}
